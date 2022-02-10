@@ -42,7 +42,7 @@ dependencies:
   url_launcher: ^6.0.3
   video_compress:
     git:
-      url: git://github.com/jonataslaw/VideoCompress.git
+      url: it://github.com/jonataslaw/VideoCompress.git
       ref: master
   video_player: ^2.1.0
   video_thumbnail: ^0.4.3
