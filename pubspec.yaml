@@ -34,7 +34,7 @@ dependencies:
   photo_manager: ^1.2.6+1
   photo_view: ^0.13.0
   rxdart: ^0.27.0
-  share_plus: ^3.0.4
+  share_plus: ^4.0.4
   shimmer: ^2.0.0
   stream_chat_flutter_core: ^3.4.0
   substring_highlight: ^1.0.26
@@ -47,7 +47,6 @@ dependencies:
   video_player: ^2.1.0
   video_thumbnail: ^0.4.3
   visibility_detector: ^0.2.0
-
 flutter:
   assets:
     - images/
