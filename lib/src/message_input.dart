@@ -389,22 +389,25 @@ class MessageInputState extends State<MessageInput> {
     if (!mounted) {
       return;
     }
-    final channel = StreamChannel.of(context).channel;
-    final cooldownStartedAt = channel.cooldownStartedAt;
-    if (cooldownStartedAt != null) {
-      final diff = DateTime.now().difference(cooldownStartedAt).inSeconds;
-      if (diff < channel.cooldown) {
-        _timeOut = channel.cooldown - diff;
-        if (_timeOut > 0) {
-          _slowModeTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-            if (_timeOut == 0) {
-              timer.cancel();
-            } else {
-              if (mounted) {
-                setState(() => _timeOut -= 1);
+    if (!(_slowModeTimer?.isActive ?? false)) {
+      final channel = StreamChannel.of(context).channel;
+      final cooldownStartedAt = channel.cooldownStartedAt;
+      if (cooldownStartedAt != null) {
+        final diff = DateTime.now().difference(cooldownStartedAt).inSeconds;
+        if (diff < channel.cooldown) {
+          _timeOut = channel.cooldown - diff;
+          if (_timeOut > 0) {
+            _slowModeTimer =
+                Timer.periodic(const Duration(seconds: 1), (timer) {
+              if (_timeOut == 0) {
+                timer.cancel();
+              } else {
+                if (mounted) {
+                  setState(() => _timeOut -= 1);
+                }
               }
-            }
-          });
+            });
+          }
         }
       }
     }
@@ -1756,93 +1759,97 @@ class MessageInputState extends State<MessageInput> {
 
   /// Sends the current message
   Future<void> sendMessage() async {
-    var text = textEditingController.text.trim();
-    if (text.isEmpty && _attachments.isEmpty) {
-      return;
-    }
-
-    var shouldKeepFocus = widget.shouldKeepFocusAfterMessage;
-
-    shouldKeepFocus ??= !_commandEnabled;
-
-    if (_commandEnabled) {
-      text = '${'/${_chosenCommand!.name} '}$text';
-    }
-
-    final attachments = [..._attachments.values];
-
-    textEditingController.clear();
-    _attachments.clear();
-    widget.onQuotedMessageCleared?.call();
-
-    setState(() {
-      _commandEnabled = false;
-    });
-
-    Message message;
-    if (widget.editMessage != null) {
-      message = widget.editMessage!.copyWith(
-        text: text,
-        attachments: attachments,
-        mentionedUsers:
-            _mentionedUsers.where((u) => text.contains('@${u.name}')).toList(),
-      );
-    } else {
-      message = (widget.initialMessage ?? Message()).copyWith(
-        parentId: widget.parentMessage?.id,
-        text: text,
-        attachments: attachments,
-        mentionedUsers:
-            _mentionedUsers.where((u) => text.contains('@${u.name}')).toList(),
-        showInChannel: widget.parentMessage != null ? _sendAsDm : null,
-      );
-    }
-
-    if (widget.quotedMessage != null) {
-      message = message.copyWith(
-        quotedMessageId: widget.quotedMessage!.id,
-      );
-    }
-
-    if (widget.preMessageSending != null) {
-      message = await widget.preMessageSending!(message);
-    }
-
-    final streamChannel = StreamChannel.of(context);
-    final channel = streamChannel.channel;
-    if (!channel.state!.isUpToDate) {
-      await streamChannel.reloadChannel();
-    }
-
-    _mentionedUsers.clear();
-
-    try {
-      Future sendingFuture;
-      if (widget.editMessage == null ||
-          widget.editMessage!.status == MessageSendingStatus.failed ||
-          widget.editMessage!.status == MessageSendingStatus.sending) {
-        sendingFuture = channel.sendMessage(message);
-      } else {
-        sendingFuture = channel.updateMessage(message);
+    if (!(_slowModeTimer?.isActive ?? false)) {
+      var text = textEditingController.text.trim();
+      if (text.isEmpty && _attachments.isEmpty) {
+        return;
       }
 
-      if (shouldKeepFocus) {
-        FocusScope.of(context).requestFocus(_focusNode);
-      } else {
-        FocusScope.of(context).unfocus();
+      var shouldKeepFocus = widget.shouldKeepFocusAfterMessage;
+
+      shouldKeepFocus ??= !_commandEnabled;
+
+      if (_commandEnabled) {
+        text = '${'/${_chosenCommand!.name} '}$text';
       }
 
-      final resp = await sendingFuture;
-      if (resp.message?.type == 'error') {
-        _parseExistingMessage(message);
-      }
-      _startSlowMode();
-      widget.onMessageSent?.call(resp.message);
-    } catch (e, stk) {
-      if (widget.onError != null) {
-        widget.onError?.call(e, stk);
+      final attachments = [..._attachments.values];
+
+      textEditingController.clear();
+      _attachments.clear();
+      widget.onQuotedMessageCleared?.call();
+
+      setState(() {
+        _commandEnabled = false;
+      });
+
+      Message message;
+      if (widget.editMessage != null) {
+        message = widget.editMessage!.copyWith(
+          text: text,
+          attachments: attachments,
+          mentionedUsers: _mentionedUsers
+              .where((u) => text.contains('@${u.name}'))
+              .toList(),
+        );
       } else {
-        rethrow;
+        message = (widget.initialMessage ?? Message()).copyWith(
+          parentId: widget.parentMessage?.id,
+          text: text,
+          attachments: attachments,
+          mentionedUsers: _mentionedUsers
+              .where((u) => text.contains('@${u.name}'))
+              .toList(),
+          showInChannel: widget.parentMessage != null ? _sendAsDm : null,
+        );
+      }
+
+      if (widget.quotedMessage != null) {
+        message = message.copyWith(
+          quotedMessageId: widget.quotedMessage!.id,
+        );
+      }
+
+      if (widget.preMessageSending != null) {
+        message = await widget.preMessageSending!(message);
+      }
+
+      final streamChannel = StreamChannel.of(context);
+      final channel = streamChannel.channel;
+      if (!channel.state!.isUpToDate) {
+        await streamChannel.reloadChannel();
+      }
+
+      _mentionedUsers.clear();
+
+      try {
+        Future sendingFuture;
+        if (widget.editMessage == null ||
+            widget.editMessage!.status == MessageSendingStatus.failed ||
+            widget.editMessage!.status == MessageSendingStatus.sending) {
+          sendingFuture = channel.sendMessage(message);
+        } else {
+          sendingFuture = channel.updateMessage(message);
+        }
+
+        if (shouldKeepFocus) {
+          FocusScope.of(context).requestFocus(_focusNode);
+        } else {
+          FocusScope.of(context).unfocus();
+        }
+
+        final resp = await sendingFuture;
+        if (resp.message?.type == 'error') {
+          _parseExistingMessage(message);
+        }
+        _startSlowMode();
+        widget.onMessageSent?.call(resp.message);
+      } catch (e, stk) {
+        if (widget.onError != null) {
+          widget.onError?.call(e, stk);
+        } else {
+          rethrow;
+        }
       }
     }
   }
