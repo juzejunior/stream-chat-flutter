@@ -171,6 +171,7 @@ class MessageListView extends StatefulWidget {
     Key? key,
     this.showScrollToBottom = true,
     this.messageBuilder,
+    this.filterMessages,
     this.parentMessageBuilder,
     this.parentMessage,
     this.threadBuilder,
@@ -213,6 +214,8 @@ class MessageListView extends StatefulWidget {
 
   /// Function used to build a custom message widget
   final MessageBuilder? messageBuilder;
+
+  final int Function(Message, Message)? filterMessages;
 
   /// Whether the view scrolls in the reading direction.
   ///
@@ -432,6 +435,11 @@ class _MessageListViewState extends State<MessageListView> {
 
   Widget _buildListView(List<Message> data) {
     messages = data;
+
+    if (widget.filterMessages != null) {
+      messages.sort(widget.filterMessages);
+    }
+
     for (var index = 0; index < messages.length; index++) {
       messagesIndex[messages[index].id] = index;
     }
