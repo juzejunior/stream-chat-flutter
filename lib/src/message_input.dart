@@ -422,6 +422,7 @@ class MessageInputState extends State<MessageInput> {
         color: _messageInputTheme.inputBackgroundColor,
       ),
       child: SafeArea(
+        top: false,
         child: GestureDetector(
           onPanUpdate: (details) {
             if (details.delta.dy > 0) {
