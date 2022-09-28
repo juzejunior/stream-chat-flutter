@@ -45,7 +45,7 @@ dependencies:
       url: https://github.com/jonataslaw/VideoCompress.git
       ref: master
   video_player: ^2.1.0
-  video_thumbnail: ^0.4.3
+  video_thumbnail: "0.5.3"
   visibility_detector: ^0.2.0
 flutter:
   assets:
